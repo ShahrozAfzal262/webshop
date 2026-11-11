@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { looks, getSizes, getSizePrice } from "./data/looks";
 import Header from "./components/Header";
 import Lineup from "./components/Lineup";
@@ -15,22 +15,22 @@ export default function App() {
   const [cart, setCart] = useState([]);
   const [activeProduct, setActiveProduct] = useState(null);
 
-  const back = () => {
+  const back = useCallback(() => {
     setFocus(selected);
     setView("lineup");
-  };
+  }, [selected]);
 
-  const pick = (i) => {
+  const pick = useCallback((i) => {
     setSelected(i);
     setView("single");
-  };
+  }, []);
 
-  const addToCart = (product) => {
+  const addToCart = useCallback((product) => {
     setCart((current) => [...current, product]);
     setActiveProduct(null);
-  };
+  }, []);
 
-  const addAllToCart = (products) => {
+  const addAllToCart = useCallback((products) => {
     const items = products.map((product) => {
       const size = getSizes(product)[1];
 
@@ -44,7 +44,7 @@ export default function App() {
     });
 
     setCart((current) => [...current, ...items]);
-  };
+  }, []);
 
   const look = looks[view === "single" ? selected : focus];
 
@@ -69,8 +69,9 @@ export default function App() {
     };
 
     window.addEventListener("keydown", onKey);
+
     return () => window.removeEventListener("keydown", onKey);
-  }, [activeProduct, view, selected]);
+  }, [activeProduct, view, back]);
 
   return (
     <div className="shop">
@@ -81,19 +82,24 @@ export default function App() {
         count={cart.length}
       />
 
-      {view === "lineup" ? (
-        <Lineup
-          looks={looks}
-          start={focus}
-          onPick={pick}
-          onFocus={setFocus}
-        />
-      ) : (
-        <SingleLook
-          look={look}
-          onOpenProduct={setActiveProduct}
-        />
-      )}
+      <div
+        className={`main-view ${view === "single" ? "single-active" : "lineup-active"}`}
+        key={view}
+      >
+        {view === "lineup" ? (
+          <Lineup
+            looks={looks}
+            start={focus}
+            onPick={pick}
+            onFocus={setFocus}
+          />
+        ) : (
+          <SingleLook
+            look={look}
+            onOpenProduct={setActiveProduct}
+          />
+        )}
+      </div>
 
       <ProductPanel
         look={look}

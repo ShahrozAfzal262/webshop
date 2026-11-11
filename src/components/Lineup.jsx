@@ -10,11 +10,12 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
 
   const state = useRef({
     angle: start,
+    targetAngle: start,
+    velocity: 0,
     down: false,
     moved: false,
     startX: 0,
     lastX: 0,
-    startAngle: start,
     clickedIndex: null,
     focus: start,
     centerX: 0,
@@ -33,9 +34,10 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
     if (!element || !strip.current || !looks.length) return;
 
     gallery.angle = mod(start, looks.length);
+    gallery.targetAngle = gallery.angle;
+    gallery.velocity = 0;
     gallery.step = (Math.PI * 2) / looks.length;
 
-    let wheelTimer;
     let raf;
 
     const updateSize = () => {
@@ -89,7 +91,7 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
       );
     };
 
-    // Touchpad: only right-to-left rotation
+    // Mouse wheel and touchpad movement
     const handleWheel = (event) => {
       event.preventDefault();
 
@@ -99,20 +101,15 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
           : event.deltaY;
 
       if (event.deltaMode === 1) movement *= 16;
+      if (event.deltaMode === 2) movement *= element.clientWidth;
 
-      if (event.deltaMode === 2) {
-        movement *= element.clientWidth;
-      }
-
-      // Ignore reverse movement
       if (movement <= 0) return;
 
-      gallery.angle = mod(
-        gallery.angle + movement / 900,
-        looks.length
-      );
+      gallery.targetAngle += movement / 900;
+      gallery.velocity = 0;
     };
 
+    // Start dragging
     const down = (event) => {
       if (event.button !== 0) return;
 
@@ -123,10 +120,10 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
 
       gallery.down = true;
       gallery.moved = false;
+      gallery.velocity = 0;
 
       gallery.startX = event.clientX;
       gallery.lastX = event.clientX;
-      gallery.startAngle = gallery.angle;
 
       const card = event.target.closest("[data-look-index]");
 
@@ -139,7 +136,7 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
       }
     };
 
-    // Mouse/touch drag: only right-to-left
+    // Drag movement
     const move = (event) => {
       if (
         event.type === "pointermove" &&
@@ -149,14 +146,13 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
       if (!gallery.down) return;
 
       const difference = event.clientX - gallery.lastX;
-
       gallery.lastX = event.clientX;
 
       if (difference < 0) {
-        gallery.angle = mod(
-          gallery.angle + Math.abs(difference) / 900,
-          looks.length
-        );
+        const movement = Math.abs(difference) / 900;
+
+        gallery.targetAngle += movement;
+        gallery.velocity = movement * 0.65;
       }
 
       if (Math.abs(event.clientX - gallery.startX) > 6) {
@@ -164,6 +160,7 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
       }
     };
 
+    // Stop dragging and select image
     const up = (event) => {
       if (
         event.type === "pointerup" &&
@@ -175,6 +172,7 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
       if (event.type === "pointercancel") {
         gallery.clickedIndex = null;
         gallery.moved = true;
+        gallery.velocity = 0;
       }
 
       gallery.down = false;
@@ -202,59 +200,76 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
     window.addEventListener("mousemove", move);
     window.addEventListener("mouseup", up);
 
-    // Smooth rendering
+    // Smooth circular animation
     const tick = () => {
-      Array.from(strip.current.children).forEach(
-        (card, index) => {
-          const angle =
-            (index - gallery.angle) * gallery.step;
+      if (!gallery.down && gallery.velocity > 0.0001) {
+        gallery.targetAngle += gallery.velocity;
+        gallery.velocity *= 0.90;
+      } else if (!gallery.down) {
+        gallery.velocity = 0;
+      }
 
-          const front = Math.cos(angle);
+      const difference = gallery.targetAngle - gallery.angle;
 
-          const isFront = front > 0;
+      gallery.angle += difference * 0.12;
 
-          const depth = (front + 1) / 2;
+      if (Math.abs(difference) < 0.0001) {
+        gallery.angle = gallery.targetAngle;
+      }
 
-          const x =
-            gallery.centerX +
-            Math.sin(angle) * gallery.radiusX;
+      // Continuous circular loop
+      const visibleAngle = mod(gallery.angle, looks.length);
 
-          const y =
-            gallery.centerY +
-            Math.cos(angle) * gallery.radiusY;
+      Array.from(strip.current.children).forEach((card, index) => {
+        const angle = (index - visibleAngle) * gallery.step;
 
-          const scale = 0.76 + depth * 0.24;
+        const front = Math.cos(angle);
+        const depth = (front + 1) / 2;
 
-          card.style.left = `${x}px`;
-          card.style.top = `${y}px`;
+        const x =
+          gallery.centerX +
+          Math.sin(angle) * gallery.radiusX;
 
-          card.style.width = `${gallery.cardWidth}px`;
-          card.style.height = `${gallery.cardHeight}px`;
+        const y =
+          gallery.centerY +
+          Math.cos(angle) * gallery.radiusY;
 
-          card.style.opacity = isFront
-            ? `${0.65 + depth * 0.35}`
-            : "0";
+        const scale = 0.76 + depth * 0.24;
 
-          card.style.visibility = isFront
-            ? "visible"
-            : "hidden";
+        // Smooth image position
+        card.style.left = `${x}px`;
+        card.style.top = `${y}px`;
+        card.style.width = `${gallery.cardWidth}px`;
+        card.style.height = `${gallery.cardHeight}px`;
 
-          card.style.pointerEvents = isFront
-            ? "auto"
-            : "none";
+        // Smooth fade transition
+        const opacity = Math.max(
+          0,
+          Math.min(1, (front + 0.12) / 0.55)
+        );
 
-          card.style.zIndex = `${Math.round(1 + depth * 10)}`;
+        card.style.opacity = `${opacity}`;
 
-          card.style.transform = `
-            translate(-50%, -50%)
-            scale(${scale})
-            rotate(${Math.sin(angle) * 3}deg)
-          `;
-        }
-      );
+        card.style.visibility = opacity > 0.01
+          ? "visible"
+          : "hidden";
 
+        card.style.pointerEvents = opacity > 0.65
+          ? "auto"
+          : "none";
+
+        card.style.zIndex = `${Math.round(1 + depth * 10)}`;
+
+        card.style.transform = `
+          translate(-50%, -50%)
+          scale(${scale})
+          rotate(${Math.sin(angle) * 3}deg)
+        `;
+      });
+
+      // Update focused look
       const focus = mod(
-        Math.round(gallery.angle),
+        Math.round(visibleAngle),
         looks.length
       );
 
@@ -270,8 +285,6 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
 
     return () => {
       cancelAnimationFrame(raf);
-      clearTimeout(wheelTimer);
-
       resizeObserver.disconnect();
 
       element.removeEventListener("wheel", handleWheel);
