@@ -4,7 +4,7 @@ import { getSizes, getSizePrice } from "../data/looks";
 
 export default function ProductDetail({ product, onClose, onAdd }) {
   const sizes = getSizes(product);
-  const [size, setSize] = useState(sizes[1] || sizes[0]);
+  const [size, setSize] = useState(sizes[1]);
   const currentPrice = getSizePrice(product, size);
 
   return (

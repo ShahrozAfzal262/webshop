@@ -1,7 +1,20 @@
-export default function Header({ view, title, onBack, count, onBag }) {
-  return <header className="top">
-    <a className="wordmark" href="/" aria-label="Form Studio home" onClick={(e) => { e.preventDefault(); onBack(); }}><span className="mark">F.</span><span>FORM <i>STUDIO</i></span></a>
-    <div className="top-center">{view === "lineup" ? "A STUDY IN EVERYDAY DRESSING" : <><button className="back" onClick={onBack}>← <span>ALL LOOKS</span></button><span className="current-title">{title}</span></>}</div>
-    <button className="cart" onClick={onBag}>BAG <span>({count})</span><i>↗</i></button>
-  </header>;
+export default function Header({ view, title, onBack, count }) {
+  return (
+    <header className="top">
+      {view === "lineup" ? (
+        <div>
+          <span className="brand">FORM / STUDIO</span>
+          <h1>Dress like <em>you mean it.</em></h1>
+          <p>Swipe left to explore our curated looks</p>
+        </div>
+      ) : (
+        <div>
+          <button className="back" onClick={onBack}>← All looks</button>
+          <span className="brand">FORM / STUDIO</span>
+          <h1 className="look-title">{title}</h1>
+        </div>
+      )}
+      <span className="cart">Bag <b>{String(count).padStart(2, "0")}</b></span>
+    </header>
+  );
 }
