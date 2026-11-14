@@ -215,9 +215,7 @@ img {
   backface-visibility: hidden;
   will-change: transform, opacity;
 
-  transition:
-    opacity .45s ease,
-    filter .45s ease;
+  transition: none !important;
 }
 
 .item img {
@@ -935,4 +933,18 @@ img {
 
 .item img {
   transition: filter 0.5s ease;
+}
+/* CAROUSEL POSITION STABILITY FIX */
+
+.lineup .item {
+  transition: none !important;
+  animation: none !important;
+  will-change: transform, opacity;
+}
+
+.lineup .item img {
+  transition: filter 0.2s ease !important;
+  animation: none !important;
+  backface-visibility: hidden;
+  position : sticky;
 }
