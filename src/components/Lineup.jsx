@@ -148,12 +148,9 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
       const difference = event.clientX - gallery.lastX;
       gallery.lastX = event.clientX;
 
-      if (difference < 0) {
-        const movement = Math.abs(difference) / 900;
-
-        gallery.targetAngle += movement;
-        gallery.velocity = movement * 0.65;
-      }
+      const movement = -difference / 900;
+      gallery.targetAngle += movement;
+      gallery.velocity = movement * 0.65;
 
       if (Math.abs(event.clientX - gallery.startX) > 6) {
         gallery.moved = true;
@@ -179,6 +176,11 @@ export default function Lineup({ looks, start, onPick, onFocus }) {
 
       if (!gallery.moved && gallery.clickedIndex !== null) {
         onPick(gallery.clickedIndex);
+      } else if (gallery.moved) {
+        gallery.targetAngle = Math.round(
+          gallery.targetAngle + gallery.velocity / (1 - 0.90)
+        );
+        gallery.velocity = 0;
       }
     };
 

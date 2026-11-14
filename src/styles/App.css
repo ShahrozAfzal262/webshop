@@ -214,6 +214,10 @@ img {
   transform-origin: center center;
   backface-visibility: hidden;
   will-change: transform, opacity;
+
+  transition:
+    opacity .45s ease,
+    filter .45s ease;
 }
 
 .item img {
@@ -226,12 +230,14 @@ img {
   pointer-events: none;
   user-select: none;
   backface-visibility: hidden;
+
   transition: filter .45s ease;
 }
 
 .item:hover img {
   filter: drop-shadow(0 16px 18px #24231f25);
 }
+
 
 /* =========================================
    SELECTED LOOK
@@ -338,7 +344,10 @@ img {
   background: #f8f7f3;
   box-shadow: 0 16px 42px #302c250d;
   backdrop-filter: blur(12px);
-  animation: panelEnter .7s cubic-bezier(.22, 1, .36, 1) both;
+
+  animation: none;
+  transform: none;
+  transition: none;
 }
 
 @keyframes panelEnter {
@@ -460,6 +469,50 @@ img {
   color: #99958d;
   font-size: 9px;
 }
+
+
+
+/* SLOW & SMOOTH CAROUSEL */
+
+.lineup {
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.item {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transition:
+    opacity 1.2s ease-in-out,
+    filter 1s ease-in-out !important;
+}
+
+.item img {
+  transition: filter .8s ease-in-out;
+}
+
+/* FIXED PRODUCT PANEL */
+
+.panel {
+  animation: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+/* FIXED BAG */
+
+.bag {
+  transition: background .35s ease, box-shadow .35s ease !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .item img {
+    animation: none;
+  }
+}
+
+
 
 /* =========================================
    BAG BUTTON
@@ -859,4 +912,27 @@ img {
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+
+
+/* SMOOTH CAROUSEL EXIT */
+
+.strip {
+  overflow: visible;
+}
+
+.lineup {
+  overflow: hidden;
+}
+
+.item {
+  transition:
+    opacity 0.8s ease-in-out,
+    filter 0.8s ease-in-out !important;
+  will-change: transform, opacity;
+}
+
+.item img {
+  transition: filter 0.5s ease;
 }
